@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/alittlebrighter/igor-relay-client"
-	"github.com/alittlebrighter/igor-relay-client/security"
+	"github.com/alittlebrighter/switchboard-client"
+	"github.com/alittlebrighter/switchboard-client/security"
 	"github.com/alittlebrighter/switchboard/models"
 	"github.com/nats-io/nats"
 	uuid "github.com/satori/go.uuid"

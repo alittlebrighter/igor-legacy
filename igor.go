@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"sync"
 
-	"github.com/alittlebrighter/igor-relay-client/security"
+	"github.com/alittlebrighter/switchboard-client/security"
 	"github.com/alittlebrighter/switchboard/models"
 	"github.com/nats-io/nats"
 
