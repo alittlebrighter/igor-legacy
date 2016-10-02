@@ -1,4 +1,4 @@
-package gateway
+package main
 
 import (
 	"encoding/json"
@@ -11,28 +11,11 @@ import (
 	"github.com/nats-io/nats"
 	uuid "github.com/satori/go.uuid"
 
-	modules "github.com/alittlebrighter/igor/common"
+	"github.com/alittlebrighter/igor/common"
 )
 
-const Name = "gateway"
-
-type Config struct {
-	ID          *uuid.UUID
-	PublicRelay string
-}
-
-func parseConfig(configMap map[string]interface{}) *Config {
-	config := new(Config)
-	id := uuid.FromStringOrNil(configMap["id"].(string))
-	config.ID = &id
-	config.PublicRelay, _ = configMap["publicRelay"].(string)
-	return config
-}
-
-func Run(config map[string]interface{}, commands chan *modules.Request) (chan *modules.Response, error) {
-	conf := parseConfig(config)
-
-	id := conf.ID
+func ConnectToWWW(config *Config, conn *nats.EncodedConn) error {
+	id := config.ID
 	if id == nil {
 		newID := uuid.NewV1()
 		id = &newID
@@ -40,20 +23,20 @@ func Run(config map[string]interface{}, commands chan *modules.Request) (chan *m
 	}
 
 	// setup connection to public relay server
-	client := relayClient.New(id, conf.PublicRelay, "shared.key", json.Marshal, json.Unmarshal)
+	client := relayClient.New(id, config.PublicRelay, config.Keyfile, json.Marshal, json.Unmarshal)
 	if err := client.OpenSocket(); err != nil {
-		log.Printf("ERROR: Could not open websocket connection to %s.  Reason: %s\n", conf.PublicRelay, err.Error())
+		log.Printf("ERROR: Could not open websocket connection to %s.  Reason: %s\n", config.PublicRelay, err.Error())
 	}
 
 	incoming, err := client.ReadMessages()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// start reading and processing incoming envelopes
-	go processEnvelopes(client, incoming, modules.PrivateRelayEncConn())
+	go processEnvelopes(client, incoming, conn)
 
-	return make(chan *modules.Response), nil
+	return nil
 }
 
 func processEnvelopes(client *relayClient.RelayClient, incoming chan *models.Envelope, out *nats.EncodedConn) {
@@ -65,7 +48,7 @@ func processEnvelopes(client *relayClient.RelayClient, incoming chan *models.Env
 			continue
 		}
 
-		contents := new(modules.Request)
+		contents := new(common.Request)
 		// TODO: unmarshal from any serialization format
 		if json.Unmarshal(data, contents); err != nil {
 			log.Printf("ERROR: Could not unmarshal the contents of the message.  Reason: %s\n", err.Error())
@@ -73,13 +56,17 @@ func processEnvelopes(client *relayClient.RelayClient, incoming chan *models.Env
 		}
 
 		response := new(models.Envelope)
-		if err = out.Request(modules.ModulePrefix+contents.Module, envelope, response, 2*time.Second); err != nil {
+		if err = out.Request(common.ModulePrefix+contents.Module, envelope, response, 2*time.Second); err != nil {
 			log.Printf("ERROR: Could not solicit response from module %s.  Reason: %s\n", contents.Module, err.Error())
 			continue
 		}
 
 		response.To = envelope.From
 		response.From = envelope.To
+
+		// TODO: generate signature
+		response.Signature = ""
+
 		client.SendMessage(response)
 	}
 

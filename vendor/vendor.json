@@ -1,0 +1,103 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "fMAaRvoiakE9YVUZm/3JsalQpfs=",
+			"path": "github.com/alittlebrighter/switchboard-client",
+			"revision": "3d90a87405310a3c1c148923b4bfa765f90509a0",
+			"revisionTime": "2016-09-26T20:35:27Z"
+		},
+		{
+			"checksumSHA1": "TmuBg14oc2uH91pXHR6Ck8nXDJg=",
+			"path": "github.com/alittlebrighter/switchboard-client/security",
+			"revision": "3d90a87405310a3c1c148923b4bfa765f90509a0",
+			"revisionTime": "2016-09-26T20:35:27Z"
+		},
+		{
+			"checksumSHA1": "9nzN9phHnn5kLzccEEplr3FaMcE=",
+			"path": "github.com/alittlebrighter/switchboard/models",
+			"revision": "accc24807798b3dcd8d23fc0dc3178ac7f472a83",
+			"revisionTime": "2016-09-24T06:26:37Z"
+		},
+		{
+			"checksumSHA1": "jt4EM+4Gy3DBdVQn0osOFrzZa3g=",
+			"path": "github.com/alittlebrighter/switchboard/util",
+			"revision": "accc24807798b3dcd8d23fc0dc3178ac7f472a83",
+			"revisionTime": "2016-09-24T06:26:37Z"
+		},
+		{
+			"checksumSHA1": "HmbftipkadrLlCfzzVQ+iFHbl6g=",
+			"path": "github.com/golang/glog",
+			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
+			"revisionTime": "2016-01-25T20:49:56Z"
+		},
+		{
+			"checksumSHA1": "8e91+1UKuR2wmFGkzwEPCf+nUYY=",
+			"path": "github.com/kidoman/embd",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "2xNK4t3oqq8qTnFtDm3JBQoX+ms=",
+			"path": "github.com/kidoman/embd/host/all",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "pG+QrhbhiJ88NJPTloDHZcZTwuY=",
+			"path": "github.com/kidoman/embd/host/bbb",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "DgK0M6RDwMYB/ZwyjdUpYuurmZk=",
+			"path": "github.com/kidoman/embd/host/generic",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "kc8LfZL+cqLUxUpY+lxAJgxIWZg=",
+			"path": "github.com/kidoman/embd/host/rpi",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "9MmrRRey8TQth3KKbv8I3Z/0/2g=",
+			"path": "github.com/kidoman/embd/util",
+			"revision": "adc3d473054c5f066be48c9459107f70021c34a4",
+			"revisionTime": "2016-09-25T18:48:02Z"
+		},
+		{
+			"checksumSHA1": "Nj7vQ2GlvJiPP7sqJX5AurrDSD4=",
+			"path": "github.com/nats-io/nats",
+			"revision": "70b70be17b77e8da86b6a3bcfe94fb22718a8dd0",
+			"revisionTime": "2016-09-16T18:17:35Z"
+		},
+		{
+			"checksumSHA1": "qAIuHdtQrDi2fFmpaP1dZLbgpGc=",
+			"path": "github.com/nats-io/nats/encoders/builtin",
+			"revision": "70b70be17b77e8da86b6a3bcfe94fb22718a8dd0",
+			"revisionTime": "2016-09-16T18:17:35Z"
+		},
+		{
+			"checksumSHA1": "i8Yom1KrpDKwjlGH/gpJGAQmo68=",
+			"path": "github.com/nats-io/nuid",
+			"revision": "289cccf02c178dc782430d534e3c1f5b72af807f",
+			"revisionTime": "2016-09-27T04:49:45Z"
+		},
+		{
+			"checksumSHA1": "zmC8/3V4ls53DJlNTKDZwPSC/dA=",
+			"path": "github.com/satori/go.uuid",
+			"revision": "b061729afc07e77a8aa4fad0a2fd840958f1942a",
+			"revisionTime": "2016-09-27T10:08:44Z"
+		},
+		{
+			"checksumSHA1": "likOl7O0BJntqagR050kkOBuY4o=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "9f0e377a8a39bb99ff03459d77c135a0042878f0",
+			"revisionTime": "2016-09-27T14:53:45Z"
+		}
+	],
+	"rootPath": "github.com/alittlebrighter/igor"
+}

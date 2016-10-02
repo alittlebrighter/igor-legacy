@@ -1,0 +1,8 @@
+namespace igor.modules.garageDoors;
+
+table GarageDoorTrigger {
+    door:short;
+    force:bool  = false;
+}
+
+root_type GarageDoorTrigger;
