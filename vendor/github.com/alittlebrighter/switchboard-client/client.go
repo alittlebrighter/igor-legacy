@@ -15,7 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
 
-	"github.com/alittlebrighter/igor-relay-client/security"
+	"github.com/alittlebrighter/switchboard-client/security"
 )
 
 const byteChunkSize = 256

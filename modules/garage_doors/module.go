@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/rpc"
 	"os"
 	"time"
 
-	"github.com/alittlebrighter/igor/common"
+	log "github.com/Sirupsen/logrus"
+
+	"github.com/alittlebrighter/igor/models"
 	"github.com/alittlebrighter/igor/modules"
 )
 
@@ -49,39 +50,48 @@ const triggerDoc = `{
     ]
 }`
 
-func (gd *GarageDoors) Docs(req common.Request, response *common.Response) error {
-	response = common.NewResponse(gd.Name)
+func (gd *GarageDoors) Docs(req models.Request, response *models.Response) error {
+	response = models.NewResponse(gd.Name)
 	response.Success = true
 	response.Data["documentation"] = triggerDoc
 
 	return nil
 }
 
-func (gd *GarageDoors) Trigger(req common.Request, response *common.Response) error {
-	response = common.NewResponse(gd.Name)
+func (gd *GarageDoors) Trigger(req models.Request, response *models.Response) error {
+	log.Debugln("Trigger called.")
 
-	reqDoor, ok := req.Args["door"]
-	if !ok {
+	response = models.NewResponse(gd.Name)
+
+	args := new(models.TriggerArgs)
+	if err := json.Unmarshal(req.Args, args); err != nil {
 		response.Success = false
-		response.Data["message"] = "You must specify a door to trigger."
+		response.Data["message"] = "Error parsing arguments."
+		log.Errorln("Could not unmarshal arguments.")
 		return nil
 	}
-	door := reqDoor.(string)
 
-	var force bool
-	if reqForce, ok := req.Args["force"]; ok {
-		force = reqForce.(bool)
+	if args.Door == "" {
+		response.Success = false
+		response.Data["message"] = "You must specify a door to trigger."
+		log.Errorln("Door not specified.")
+		return nil
 	}
 
-	if err := gd.doors[door].Trigger(force); err != nil {
+	if err := gd.doors[args.Door].Trigger(args.Force); err != nil {
 		response.Success = false
+		response.Data["door"] = args.Door
+		response.Data["force"] = args.Force
 		response.Data["message"] = "ERROR: " + err.Error()
+		log.WithFields(response.Data).Errorln("Could not trigger door.")
 		return nil
 	}
 
 	response.Success = true
+	response.Data["door"] = args.Door
+	response.Data["force"] = args.Force
 	response.Data["message"] = "Garage door successfully triggered."
-	response.Data["door"] = door
+	log.WithFields(response.Data).Debugln("Door successfully triggered.")
 
 	return nil
 }
@@ -106,23 +116,24 @@ func main() {
 	flag.Parse()
 
 	if _, err := os.Stat(*configFileName); err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatalln("Configuration file does not exist.")
 	}
 
 	configFile, err := ioutil.ReadFile(*configFileName)
 	if err != nil {
-		log.Fatalln(err)
+		log.WithError(err).Fatalln("Configuration file could not be read.")
 	}
 
 	config := new(Config)
 	if err := json.Unmarshal(configFile, config); err != nil {
-		log.Fatalln(err)
+		log.WithError(err).Fatalln("Configuration file could not be parsed.")
 	}
 
 	module := new(GarageDoors)
 	module.configureModule(config)
+	log.WithField("config", config).Debugln("Module configured.")
 
 	if err := serve(module); err != nil {
-		log.Fatalln(err)
+		log.WithError(err).Fatalln("Module RPC server could not be started.")
 	}
 }

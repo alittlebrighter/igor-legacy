@@ -4,11 +4,15 @@ import (
 	"net"
 	"net/rpc"
 
-	"github.com/alittlebrighter/igor/common"
+	"github.com/alittlebrighter/igor/models"
+)
+
+const (
+	ModulePrefix = "igor.module."
 )
 
 type Module interface {
-	Docs(common.Request, *common.Response) error
+	Docs(models.Request, *models.Response) error
 }
 
 type BaseConfig struct {
