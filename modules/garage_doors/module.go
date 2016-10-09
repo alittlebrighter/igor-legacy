@@ -1,9 +1,7 @@
-package main
+package garageDoors
 
 import (
 	"encoding/json"
-	"flag"
-	"io/ioutil"
 	"net"
 	"net/rpc"
 	"os"
@@ -26,7 +24,15 @@ type GarageDoors struct {
 	doors map[string]*GarageDoorController
 }
 
-func (gd *GarageDoors) configureModule(config *Config) error {
+func (gd *GarageDoors) Configure(req models.Request, response *models.Response) error {
+	config := new(Config)
+	if err := json.Unmarshal(req.Args, config); err != nil {
+		response.Success = false
+		response.Data["message"] = "Error parsing arguments."
+		log.Errorln("Could not unmarshal arguments.")
+		return nil
+	}
+
 	gd.Name = config.Name
 	gd.SocketDir = config.SocketDir
 	gd.doors = make(map[string]*GarageDoorController)
@@ -96,7 +102,10 @@ func (gd *GarageDoors) Trigger(req models.Request, response *models.Response) er
 	return nil
 }
 
-func serve(m *GarageDoors) error {
+func ServeRPC(m *GarageDoors) error {
+	// remove any previous sockets
+	os.Remove(m.SocketDir + m.Name)
+
 	listener, err := net.Listen("unix", m.SocketDir+m.Name)
 	if err != nil {
 		return err
@@ -109,31 +118,4 @@ func serve(m *GarageDoors) error {
 	server.RegisterName(m.Name, m)
 	server.Accept(listener)
 	return nil
-}
-
-func main() {
-	configFileName := flag.String("config", "/etc/igor/modules/garage_doors.conf", "The JSON formatted file the specifies the configuration Igor should use.")
-	flag.Parse()
-
-	if _, err := os.Stat(*configFileName); err != nil {
-		log.WithError(err).Fatalln("Configuration file does not exist.")
-	}
-
-	configFile, err := ioutil.ReadFile(*configFileName)
-	if err != nil {
-		log.WithError(err).Fatalln("Configuration file could not be read.")
-	}
-
-	config := new(Config)
-	if err := json.Unmarshal(configFile, config); err != nil {
-		log.WithError(err).Fatalln("Configuration file could not be parsed.")
-	}
-
-	module := new(GarageDoors)
-	module.configureModule(config)
-	log.WithField("config", config).Debugln("Module configured.")
-
-	if err := serve(module); err != nil {
-		log.WithError(err).Fatalln("Module RPC server could not be started.")
-	}
 }

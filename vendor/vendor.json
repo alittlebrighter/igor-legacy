@@ -3,6 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "2avCvSn0XonfApKKuTMyiQmk7s0=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
+			"revisionTime": "2016-08-29T20:23:21Z"
+		},
+		{
+			"path": "github.com/alittlebrighter/igor/common",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "fMAaRvoiakE9YVUZm/3JsalQpfs=",
 			"path": "github.com/alittlebrighter/switchboard-client",
 			"revision": "3d90a87405310a3c1c148923b4bfa765f90509a0",
@@ -87,6 +97,12 @@
 			"revisionTime": "2016-09-27T04:49:45Z"
 		},
 		{
+			"checksumSHA1": "9mdQhgvK3q4iEm0/mhLYxh1P6Fg=",
+			"path": "github.com/radovskyb/watcher",
+			"revision": "724bb6eae8086e45cfd6e8f810ff24bc785be7bb",
+			"revisionTime": "2016-10-01T03:02:47Z"
+		},
+		{
 			"checksumSHA1": "zmC8/3V4ls53DJlNTKDZwPSC/dA=",
 			"path": "github.com/satori/go.uuid",
 			"revision": "b061729afc07e77a8aa4fad0a2fd840958f1942a",
@@ -97,6 +113,13 @@
 			"path": "golang.org/x/net/websocket",
 			"revision": "9f0e377a8a39bb99ff03459d77c135a0042878f0",
 			"revisionTime": "2016-09-27T14:53:45Z"
+		},
+		{
+			"checksumSHA1": "u4rtURsE9Cn7TK4OPwH8axBMK6M=",
+			"origin": "github.com/Sirupsen/logrus/vendor/golang.org/x/sys/unix",
+			"path": "golang.org/x/sys/unix",
+			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
+			"revisionTime": "2016-08-29T20:23:21Z"
 		}
 	],
 	"rootPath": "github.com/alittlebrighter/igor"

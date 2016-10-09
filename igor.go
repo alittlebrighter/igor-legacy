@@ -1,16 +1,12 @@
-package main
+package igor
 
 import (
 	"encoding/json"
-	"flag"
-	"io/ioutil"
 	"net/rpc"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
 
-	log "github.com/Sirupsen/logrus"
+	logger "github.com/Sirupsen/logrus"
 	"github.com/alittlebrighter/switchboard-client/security"
 	sModels "github.com/alittlebrighter/switchboard/models"
 	"github.com/nats-io/nats"
@@ -26,20 +22,23 @@ type Config struct {
 	PublicRelay, PrivateRelay, Keyfile, ModuleSocketDir string
 }
 
-type subscriptionClient struct {
-	subscription *nats.Subscription
-	client       *rpc.Client
+type SubscriptionClient struct {
+	Subscription *nats.Subscription
+	Client       *rpc.Client
 }
 
-func subscribeModule(conn *nats.EncodedConn, socketDir, moduleName string) (*subscriptionClient, error) {
-	subClient := new(subscriptionClient)
+func SubscribeModule(conn *nats.EncodedConn, socketDir, moduleName string) (*SubscriptionClient, error) {
+	log := logger.WithField("func", "SubscribeModule")
+
+	subClient := new(SubscriptionClient)
 	var err error
-	subClient.client, err = rpc.Dial("unix", socketDir+moduleName)
+	subClient.Client, err = rpc.Dial("unix", socketDir+moduleName)
 	if err != nil {
 		return nil, err
 	}
 
-	subClient.subscription, err = conn.Subscribe(modules.ModulePrefix+moduleName, func(subj, reply string, env *sModels.Envelope) {
+	log.WithField("topic", modules.ModulePrefix+moduleName).Debugln("Subscribing to topic.")
+	subClient.Subscription, err = conn.Subscribe(modules.ModulePrefix+moduleName, func(subj, reply string, env *sModels.Envelope) {
 		data, err := security.DecryptFromString(env.Contents)
 		if err != nil {
 			log.WithError(err).Errorln("Could not decrypt the contents of the message.")
@@ -53,7 +52,8 @@ func subscribeModule(conn *nats.EncodedConn, socketDir, moduleName string) (*sub
 		}
 
 		resp := new(models.Response)
-		if err := subClient.client.Call(moduleName+"."+contents.Method, contents, resp); err != nil {
+		log.WithField("RPCCall", moduleName+"."+contents.Method).Debugln("Making RPC call to module.")
+		if err := subClient.Client.Call(moduleName+"."+contents.Method, contents, resp); err != nil {
 			log.WithError(err).Errorln("Something went wrong on the RPC server.")
 			return
 		}
@@ -77,123 +77,63 @@ func subscribeModule(conn *nats.EncodedConn, socketDir, moduleName string) (*sub
 	return subClient, err
 }
 
-func main() {
-	configFileName := flag.String("config", "/etc/igor/igor.conf", "The JSON formatted file the specifies the configuration Igor should use.")
-	debugMode := flag.Bool("debug", false, "Sets the logging level to DEBUG.")
-	flag.Parse()
+func ProcessFileEvents(w *watcher.Watcher, watched string, subscriptions map[string]*SubscriptionClient, ec *nats.EncodedConn) {
+	log := logger.WithField("func", "ProcessFileEvents")
 
-	log.SetLevel(log.WarnLevel)
-	if *debugMode {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("Set logging level to DebugLevel.")
-	}
-
-	configFile, err := ioutil.ReadFile(*configFileName)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"fileName": *configFileName,
-			"error":    err,
-		}).Fatalln("Configuration file could not be read.")
-	}
-
-	config := new(Config)
-	if err := json.Unmarshal(configFile, config); err != nil {
-		log.WithFields(log.Fields{
-			"fileName": *configFileName,
-			"error":    err,
-		}).Fatalln("Configuration file could not be parsed.")
-	}
-
-	if _, err := os.Stat(config.Keyfile); os.IsNotExist(err) {
-		log.WithFields(log.Fields{
-			"fileName": config.Keyfile,
-			"error":    err,
-		}).Fatalln("Key file not found.")
-	}
-	security.SetSharedKeyFile(config.Keyfile)
-
-	// setup connection to local gnatsd server
-	// TODO: run through interface so we aren't specifically dependent on nats
-	nc, err := nats.Connect("nats://"+config.PrivateRelay, nats.UserInfo("rpi", "tastypi314"))
-	if err != nil {
-		log.WithFields(log.Fields{
-			"brokerHost": config.PrivateRelay,
-			"error":      err,
-		}).Fatalln("Could not connect to message broker.")
-	}
-
-	ec, err := nats.NewEncodedConn(nc, nats.GOB_ENCODER)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"brokerHost": config.PrivateRelay,
-			"error":      err,
-		}).Fatalln("Could not initiate encoded connection.")
-	}
-
-	ConnectToWWW(config, ec)
-
-	subscriptions := map[string]*subscriptionClient{}
-	defer func() {
-		for key, sub := range subscriptions {
-			sub.client.Close()
-			sub.subscription.Unsubscribe()
-			delete(subscriptions, key)
+	addSubscription := func(socket string) {
+		subClient, err := SubscribeModule(ec, watched, socket)
+		if err != nil {
+			log.WithFields(logger.Fields{
+				"subscription": socket,
+				"error":        err,
+			}).Errorln("Could not subscribe.")
+		} else {
+			subscriptions[socket] = subClient
 		}
-	}()
+	}
 
-	wg := new(sync.WaitGroup)
+	log.WithField("directory", watched).Debugln("Getting existing connections.")
+	filepath.Walk(watched, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.WithFields(logger.Fields{
+				"path":  path,
+				"error": err,
+			}).Debugln("Could not walk path.")
+			return err
+		} else if path == watched {
+			return nil
+		}
 
-	w := watcher.New()
+		addSubscription(filepath.Base(path))
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case event := <-w.Event:
-				file := filepath.Base(event.Name())
+	log.WithField("directory", watched).Debugln("Watching for new connections.")
+	for {
+		select {
+		case event := <-w.Event:
+			file := filepath.Base(event.Name())
 
-				// Print out the file name with a message
-				// based on the event type.
-				switch event.EventType {
-				case watcher.EventFileAdded:
-					log.WithField("module", file).Debugln("New module found.")
-					subClient, err := subscribeModule(ec, config.ModuleSocketDir, file)
-					if err != nil {
-						log.WithFields(log.Fields{
-							"subscription": file,
-							"error":        err,
-						}).Errorln("Could not subscribe.")
-					} else {
-						subscriptions[file] = subClient
-					}
-				case watcher.EventFileDeleted:
-					log.WithField("module", file).Debugln("Module closed.")
-					err := subscriptions[file].client.Close()
-					err = subscriptions[file].subscription.Unsubscribe()
-					if log.GetLevel() == log.DebugLevel {
-						log.WithError(err).Errorln("Could not close RPC client or unsubscribe.")
-					}
-					delete(subscriptions, file)
+			// Print out the file name with a message
+			// based on the event type.
+			switch event.EventType {
+			case watcher.EventFileAdded:
+				log.WithField("module", file).Debugln("New module found.")
+				addSubscription(file)
+			case watcher.EventFileDeleted:
+				log.WithField("module", file).Debugln("Module closed.")
+				err := subscriptions[file].Client.Close()
+				err = subscriptions[file].Subscription.Unsubscribe()
+				if logger.GetLevel() == logger.DebugLevel {
+					log.WithError(err).Errorln("Could not close RPC client or unsubscribe.")
 				}
-			case err := <-w.Error:
-				log.WithError(err).Errorln("ERROR: File event resulted in an error.")
-				return
+				delete(subscriptions, file)
 			}
+		case err := <-w.Error:
+			log.WithError(err).Errorln("File event resulted in an error.")
+			return
 		}
-	}()
-
-	if err := w.Add(config.ModuleSocketDir); err != nil {
-		log.WithFields(log.Fields{
-			"directory": config.ModuleSocketDir,
-			"error":     err,
-		}).Fatalln("Could not watch module socket directory.")
 	}
 
-	if err := w.Start(time.Duration(5) * time.Second); err != nil {
-		log.WithError(err).Fatalln("Could not start watching module socket directory.")
-	}
-
-	wg.Add(1)
-
-	wg.Wait()
+	log.WithField("directory", watched).Warnln("Stopped watching directory.")
 }

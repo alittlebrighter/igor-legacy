@@ -1,4 +1,4 @@
-package main
+package igor
 
 import (
 	"encoding/json"
